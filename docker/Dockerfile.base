@@ -36,6 +36,24 @@ RUN pip3 install \
     zeroconf \
     ws4py
 
+# By default, use the i965 driver
+ENV LIBVA_DRIVER_NAME=i965
+# Install packages for apt repo
+
+RUN wget -qO - https://repositories.intel.com/graphics/intel-graphics.key | apt-key add - \
+    && echo 'deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main' > /etc/apt/sources.list.d/intel-graphics.list \
+    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F63F0F2B90935439 \
+    && echo 'deb http://ppa.launchpad.net/kisak/kisak-mesa/ubuntu focal main' > /etc/apt/sources.list.d/kisak-mesa-focal.list
+
+RUN apt-get -qq update \
+    && apt-get -qq install --no-install-recommends -y \
+    # ffmpeg dependencies
+    libgomp1 \
+    # VAAPI drivers for Intel hardware accel
+    libva-drm2 libva2 libmfx1 i965-va-driver vainfo intel-media-va-driver-non-free mesa-vdpau-drivers mesa-va-drivers mesa-vdpau-drivers libdrm-radeon1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && (apt-get autoremove -y; apt-get autoclean -y)
+
 COPY --from=nginx /usr/local/nginx/ /usr/local/nginx/
 
 # get model and labels
@@ -44,11 +62,9 @@ RUN wget -q https://github.com/google-coral/test_data/raw/release-frogfish/ssdli
 RUN wget -q https://github.com/google-coral/test_data/raw/release-frogfish/ssdlite_mobiledet_coco_qat_postprocess.tflite -O /cpu_model.tflite
 
 WORKDIR /opt/frigate/
-ADD frigate frigate/
 ADD migrations migrations/
 
 COPY --from=web /opt/frigate/build web/
-
 COPY docker/rootfs/ /
 
 EXPOSE 5000

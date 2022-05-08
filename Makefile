@@ -17,9 +17,13 @@ amd64_ffmpeg:
 nginx_frigate:
 	docker buildx build --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag blakeblackshear/frigate-nginx:1.0.2 --file docker/Dockerfile.nginx .
 
-amd64_frigate: version web
-	docker build --no-cache --tag frigate-base --build-arg ARCH=amd64 --build-arg FFMPEG_VERSION=1.1.0 --build-arg WHEELS_VERSION=1.0.3 --build-arg NGINX_VERSION=1.0.2 --file docker/Dockerfile.base .
+amd64_frigate: version
+	# docker build --no-cache --tag frigate-base --build-arg ARCH=amd64 --build-arg FFMPEG_VERSION=1.1.0 --build-arg WHEELS_VERSION=1.0.3 --build-arg NGINX_VERSION=1.0.2 --file docker/Dockerfile.base .
 	docker build --no-cache --tag frigate --file docker/Dockerfile.amd64 .
+
+docker: amd64_frigate
+	docker image tag frigate ghcr.io/alinbalutoiu/frigate:latest
+	docker push ghcr.io/alinbalutoiu/frigate:latest
 
 amd64_all: amd64_wheels amd64_ffmpeg amd64_frigate
 

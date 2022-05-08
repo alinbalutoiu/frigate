@@ -216,8 +216,13 @@ class BirdsEyeFrameManager:
         # calculate layout dimensions
         layout_dim = math.ceil(math.sqrt(len(active_cameras)))
 
+        new_cameras = len(active_cameras.difference(self.active_cameras))
+
         # reset the layout if it needs to be different
-        if layout_dim != self.layout_dim:
+        if layout_dim != self.layout_dim or new_cameras > 0:
+            if new_cameras > 0:
+                logger.warning(f"Added {new_cameras} new cameras, sorting...")
+
             logger.debug(f"Changing layout size from {self.layout_dim} to {layout_dim}")
             self.layout_dim = layout_dim
 
@@ -248,8 +253,12 @@ class BirdsEyeFrameManager:
 
         removed_cameras = self.active_cameras.difference(active_cameras)
         added_cameras = active_cameras.difference(self.active_cameras)
-
+        added_cameras = sorted(added_cameras)
         self.active_cameras = active_cameras
+
+        if new_cameras > 0:
+            logger.warning(f"removed_cameras: {removed_cameras}")
+            logger.warning(f"added_cameras: {added_cameras}")
 
         # update each position in the layout
         for position, camera in enumerate(self.camera_layout, start=0):
@@ -258,7 +267,7 @@ class BirdsEyeFrameManager:
             if camera in removed_cameras:
                 # if replacing this camera with a newly added one
                 if len(added_cameras) > 0:
-                    added_camera = added_cameras.pop()
+                    added_camera = added_cameras.pop(0)
                     self.camera_layout[position] = added_camera
                     self.copy_to_position(
                         position,
@@ -275,7 +284,7 @@ class BirdsEyeFrameManager:
                 removed_cameras.remove(camera)
             # if an empty spot and there are cameras to add
             elif camera is None and len(added_cameras) > 0:
-                added_camera = added_cameras.pop()
+                added_camera = added_cameras.pop(0)
                 self.camera_layout[position] = added_camera
                 self.copy_to_position(
                     position,
