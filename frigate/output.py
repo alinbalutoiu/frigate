@@ -280,7 +280,7 @@ class BirdsEyeFrameManager:
         # check if we need to reset the layout because there are new cameras and we need to sort them
         reset_layout = (
             True
-            if self.config.Birdseye.sort_cameras
+            if self.config.birdseye.sort_cameras
             and len(active_cameras.difference(self.active_cameras)) > 0
             else False
         )
@@ -325,13 +325,15 @@ class BirdsEyeFrameManager:
 
         self.active_cameras = active_cameras
 
-        if self.config.Birdseye.sort_cameras:
+        if self.config.birdseye.sort_cameras:
             # sort cameras by the position and by name if the position is the same
-            added_cameras.sort(
+            added_cameras = sorted(
+                added_cameras,
                 key=lambda added_camera: (
                     self.config.cameras[added_camera].birdseye.position,
                     added_camera,
-                )
+                ),
+                reverse=True,
             )
 
         # update each position in the layout
@@ -340,7 +342,7 @@ class BirdsEyeFrameManager:
             if camera in removed_cameras:
                 # if replacing this camera with a newly added one
                 if len(added_cameras) > 0:
-                    added_camera = added_cameras.pop(0)
+                    added_camera = added_cameras.pop()
                     self.camera_layout[position] = added_camera
                     self.copy_to_position(
                         position,
@@ -357,7 +359,7 @@ class BirdsEyeFrameManager:
                 removed_cameras.remove(camera)
             # if an empty spot and there are cameras to add
             elif camera is None and len(added_cameras) > 0:
-                added_camera = added_cameras.pop(0)
+                added_camera = added_cameras.pop()
                 self.camera_layout[position] = added_camera
                 self.copy_to_position(
                     position,
