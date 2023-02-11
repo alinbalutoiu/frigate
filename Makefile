@@ -16,8 +16,7 @@ local-trt: version
 	docker buildx build --target=frigate-tensorrt --tag frigate:latest-tensorrt --load .
 
 amd64:
-	docker buildx build --platform linux/amd64 --target=frigate --tag $(IMAGE_REPO):$(VERSION)-$(COMMIT_HASH) .
-	docker buildx build --platform linux/amd64 --target=frigate-tensorrt --tag $(IMAGE_REPO):$(VERSION)-$(COMMIT_HASH)-tensorrt .
+	limactl shell docker docker build --tag $(IMAGE_REPO):$(VERSION)-$(COMMIT_HASH) .
 
 arm64:
 	docker buildx build --platform linux/arm64 --target=frigate --tag $(IMAGE_REPO):$(VERSION)-$(COMMIT_HASH) .
