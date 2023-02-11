@@ -4,6 +4,7 @@ import logging
 import math
 import multiprocessing as mp
 import os
+import operator
 import queue
 import signal
 import subprocess as sp
@@ -276,8 +277,21 @@ class BirdsEyeFrameManager:
         # calculate layout dimensions
         layout_dim = math.ceil(math.sqrt(len(active_cameras)))
 
+        # check if we need to reset the layout because there are new cameras and we need to sort them
+        reset_layout = (
+            True
+            if self.config.Birdseye.sort_cameras
+            and len(active_cameras.difference(self.active_cameras)) > 0
+            else False
+        )
+
         # reset the layout if it needs to be different
-        if layout_dim != self.layout_dim:
+        if layout_dim != self.layout_dim or reset_layout:
+            if reset_layout:
+                logger.debug(
+                    f"Added new cameras and Birdseye sorting is enabled, resetting layout..."
+                )
+
             logger.debug(f"Changing layout size from {self.layout_dim} to {layout_dim}")
             self.layout_dim = layout_dim
 
@@ -311,14 +325,22 @@ class BirdsEyeFrameManager:
 
         self.active_cameras = active_cameras
 
+        if self.config.Birdseye.sort_cameras:
+            # sort cameras by the position and by name if the position is the same
+            added_cameras.sort(
+                key=lambda added_camera: (
+                    self.config.cameras[added_camera].birdseye.position,
+                    added_camera,
+                )
+            )
+
         # update each position in the layout
         for position, camera in enumerate(self.camera_layout, start=0):
-
             # if this camera was removed, replace it or clear it
             if camera in removed_cameras:
                 # if replacing this camera with a newly added one
                 if len(added_cameras) > 0:
-                    added_camera = added_cameras.pop()
+                    added_camera = added_cameras.pop(0)
                     self.camera_layout[position] = added_camera
                     self.copy_to_position(
                         position,
@@ -335,7 +357,7 @@ class BirdsEyeFrameManager:
                 removed_cameras.remove(camera)
             # if an empty spot and there are cameras to add
             elif camera is None and len(added_cameras) > 0:
-                added_camera = added_cameras.pop()
+                added_camera = added_cameras.pop(0)
                 self.camera_layout[position] = added_camera
                 self.copy_to_position(
                     position,
